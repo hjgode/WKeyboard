@@ -13,10 +13,11 @@ public class MyReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if(intent.getAction()=="SENDKEYCODE") {
+        addLog("onReceive: " + (intent!=null? intent.toString():""));
+        if(intent.getAction()=="com.demo.wkeyboard.MyReceiver.SENDKEYCODES") {
             // TODO: This method is called when the BroadcastReceiver is receiving
             // an Intent broadcast.
-            addLog("onReceive:SENDKEYCODE");
+            addLog("onReceive:SENDKEYCODE(S)");
             ObservableObject.getInstance().updateValue(intent);
         }
     }

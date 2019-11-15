@@ -25,6 +25,7 @@ public class MyInputMethodService extends InputMethodService implements Keyboard
     final static String TAG="MyInputMethodService";
     MyReceiver myReceiver=new MyReceiver();
     int mode=0;
+    KeyStates keyStates;
 
     @Override
     public View onCreateInputView() {
@@ -38,15 +39,69 @@ public class MyInputMethodService extends InputMethodService implements Keyboard
         keyboardView.setOnKeyboardActionListener(this);
 
         ObservableObject.getInstance().addObserver(this);
-        registerReceiver(myReceiver, new IntentFilter("SENDKEYCODE"));
+        IntentFilter intentFilter=new IntentFilter();
+
+        intentFilter.addAction("SENDKEYCODES");
+        registerReceiver(myReceiver, intentFilter);
 
         return keyboardView;
     }
+
+    class KeyStates{
+        boolean iReturn=false;
+        public boolean ALT_PRESSED=false;
+        public boolean CTRL_PRESSED=false;
+        public boolean SHIFT_PRESSED=false;
+        //toggle ALT, CTRL or SHIFT and return what was changed
+        public boolean toggleKey(int keycode){
+            if( keycode==KeyEvent.KEYCODE_ALT_LEFT || keycode==KeyEvent.KEYCODE_ALT_RIGHT){
+                ALT_PRESSED=!ALT_PRESSED;
+                iReturn=ALT_PRESSED;
+                keystates[0]=!keystates[0];
+            }else if(keycode==KeyEvent.KEYCODE_CTRL_LEFT || keycode==KeyEvent.KEYCODE_CTRL_RIGHT){
+                CTRL_PRESSED=!CTRL_PRESSED;
+                iReturn=CTRL_PRESSED;
+                keystates[1]=!keystates[1];
+            }else if(keycode==KeyEvent.KEYCODE_SHIFT_LEFT ||keycode==KeyEvent.KEYCODE_SHIFT_RIGHT) {
+                SHIFT_PRESSED=!SHIFT_PRESSED;
+                iReturn=SHIFT_PRESSED;
+                keystates[2]=!keystates[2];
+            }
+            return iReturn;
+        }
+        public boolean[] keystates=new boolean[]{false, false, false};
+    }
+
     @Override
     public void update(Observable observable, Object data) {
         addLog(String.valueOf("activity observer " + data));
-        int keycode=((Intent)data).getIntExtra("KEYCODE", 0);
-        onKey(keycode, new int[]{});
+        Intent intent=(Intent)data;
+        addLog("update(Observable) : " + (intent!=null? intent.toString():""));
+        if(intent.getAction().equals("com.demo.wkeyboard.MyReceiver.SENDKEYCODES")){
+
+            int[] keycodes=intent.getIntArrayExtra("KEYCODES");
+            if(keycodes!=null){
+                for (int keycode:keycodes
+                     ) {
+                    addLog("processing: " + keycode);
+                    if(     keycode==KeyEvent.KEYCODE_ALT_LEFT ||
+                            keycode==KeyEvent.KEYCODE_CTRL_LEFT ||
+                            keycode==KeyEvent.KEYCODE_SHIFT_LEFT ||
+                            keycode==KeyEvent.KEYCODE_ALT_RIGHT ||
+                            keycode==KeyEvent.KEYCODE_CTRL_RIGHT ||
+                            keycode==KeyEvent.KEYCODE_SHIFT_RIGHT )
+                    {
+                        boolean kDownNow =keyStates.toggleKey(keycode);
+                        if(kDownNow)
+                            onKeyDown(keycode);
+                        else
+                            onKeyUp(keycode);
+                    }else {
+                        onKey(keycode, new int[]{});
+                    }
+                }
+            }
+        }
     }
     void addLog(String s){
         Log.d(TAG, s);
@@ -61,6 +116,20 @@ public class MyInputMethodService extends InputMethodService implements Keyboard
         addLog("onRelease: "+i);
     }
 
+    public void onKeyDown(int keyCode) {
+        addLog("onKey " + keyCode);
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (inputConnection != null) {
+            inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+        }
+    }
+    public void onKeyUp(int keyCode) {
+        addLog("onKey " + keyCode);
+        InputConnection inputConnection = getCurrentInputConnection();
+        if (inputConnection != null) {
+            inputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+        }
+    }
     @Override
     public void onKey(int primaryCode, int[] keyCodes) {
         addLog("onKey " + primaryCode);

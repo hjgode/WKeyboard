@@ -10,11 +10,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <receiver
-            android:name=".MyReceiver"
+            android:name="com.demo.wkeyboard.MyReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="SENDKEYCODE" />
+                <action android:name="com.demo.wkeyboard.MyReceiver.SENDKEYCODES" />
             </intent-filter>
         </receiver>
 
